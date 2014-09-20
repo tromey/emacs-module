@@ -262,6 +262,12 @@ This will define a function `ZZZ-f' which will call `QQQ-a' and
        (equal (module--internal-file-name module--current)
 	      load-file-name)))
 
+(defmacro declare-internal-function (fn)
+  "Declare FN as a function internal to this module.
+This is needed in to allow mutual recursion while still
+renaming symbols properly."
+  (module--maybe-define-private fn))
+
 (defun module--internal-macroexpand-for-load (form full-p)
   "After-advice for `internal-macroexpand-for-load' that rewrites forms."
   (when (and full-p (module--top-active-p))
