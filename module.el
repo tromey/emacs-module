@@ -53,6 +53,8 @@
 ;; Nothing handles `declare-function' but we really should.  We can
 ;; probably advise it to make this work.
 
+;; Make tools like C-h f, eldoc, etc, work with this
+
 ;;; Code:
 
 (require 'cl-macs)
