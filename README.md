@@ -9,6 +9,16 @@ the like will be renamed -- but other symbols will not be.  This
 feature is critical to keeping normal Elisp working, as the Emacs
 core sometimes requires certain symbol names in APIs.
 
+Note that a private symbol must be seen -- declared with `defvar` or
+the like -- before any uses.  Otherwise the renamer will not know to
+rename the use.  Normally this is not a problem but you must take care
+to declare internal functions when you need mutual recursion.  You can
+do this like so:
+
+```elisp
+(declare-internal-function private-function)
+```
+
 When renaming, exported symbols will be given the package prefix, and
 internal symbols will use the "--" convention.
 
