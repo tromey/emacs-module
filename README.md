@@ -45,3 +45,7 @@ A module is terminated by calling `provide`.
 The renaming is not perfect.  If your code uses `intern` or otherwise
 reflects on symbols then you have to be aware of the transforms done
 by module.el.
+
+Another bug is that autoload cookies aren't rewritten.
+
+A feature request is to make `import-module` warn about shadowing.
