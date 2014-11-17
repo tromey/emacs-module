@@ -1,6 +1,7 @@
-This is a simple module system for Emacs Lisp.  It allows short
-symbol names in the source code but exports the names using the
-standard elisp-style module prefixes.
+This is a simple module system for Emacs Lisp, inspired by [Nic
+Ferrier's proposal](https://lists.gnu.org/archive/html/emacs-devel/2013-07/msg00738.html).  It allows short symbol
+names in the source code but exports the names using the standard
+elisp-style module prefixes.
 
 To define a module, see `define-module`.  After a `define-module`,
 some symbols in the current load file will be renamed.  In
@@ -42,6 +43,8 @@ module.el.  Importing a module implicitly `require`s the feature.
 
 A module is terminated by calling `provide`.
 
+### Bugs
+
 The renaming is not perfect.  If your code uses `intern` or otherwise
 reflects on symbols then you have to be aware of the transforms done
 by module.el.
@@ -49,3 +52,6 @@ by module.el.
 Another bug is that autoload cookies aren't rewritten.
 
 A feature request is to make `import-module` warn about shadowing.
+
+There is no facility for sub-modules.  It may be useful to provide
+this.
