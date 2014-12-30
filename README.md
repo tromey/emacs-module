@@ -55,3 +55,5 @@ A feature request is to make `import-module` warn about shadowing.
 
 There is no facility for sub-modules.  It may be useful to provide
 this.
+
+Maybe I should have called these "namespaces", not "modules".
