@@ -204,7 +204,7 @@ and `something-whatever'."
 	(mapatoms
 	 (lambda (sym)
 	   (let ((sym-name (symbol-name sym)))
-	     ;; Strip of the "NAME-" prefix, leaving the bare name.
+	     ;; Strip off the "NAME-" prefix, leaving the bare name.
 	     (if (string-match prefix-rx sym-name)
 		 (push (intern (match-string 1 sym-name)) specs))))))))
   (let ((prefix (concat (symbol-name name) "-")))
@@ -220,10 +220,11 @@ module named NAME, then symbols are imported from it according to
 SPECS.  Otherwise, symbols are imported from an \"implicit
 module\" named NAME.
 
-If SPECS is `nil', then all exported symbols from the module are
-imported into the current module.
+SPECS are symbols that are to be imported.  The short name of the
+symbol should be used.
 
-Otherwise, SPECS is a list of symbols that are imported.
+If no SPECS are provided, then all exported symbols from the
+module are imported into the current module.
 
 All imported symbols will be available to the current module
 using their short names.
