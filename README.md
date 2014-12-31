@@ -41,6 +41,12 @@ Because module boundaries are purely based on symbol naming
 conventions, you can also "import" from modules that do not use
 module.el.  Importing a module implicitly `require`s the feature.
 
+```elisp
+(define-module testmodule)
+;; Import some symbols from M.
+(import-module M a b c)
+```
+
 A module is terminated by calling `provide`.
 
 ### Bugs
@@ -49,11 +55,13 @@ The renaming is not perfect.  If your code uses `intern` or otherwise
 reflects on symbols then you have to be aware of the transforms done
 by module.el.
 
-Another bug is that autoload cookies aren't rewritten.
+A related bug is that autoload cookies aren't rewritten.  This seems
+reasonably hard to fix, since they can refer to any symbol and so the
+cookie extraction code would have to duplicate the importing logic.
 
-A feature request is to make `import-module` warn about shadowing.
+This module system does not support having multiple versions of a
+module loaded simultaneously.  However, that seems like a good feature
+to support.
 
-There is no facility for sub-modules.  It may be useful to provide
-this.
-
-Maybe I should have called these "namespaces", not "modules".
+See the issue tracker for other bugs, and for discussion of the
+versioning problem.
