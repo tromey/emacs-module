@@ -7,7 +7,8 @@ check:
 	$(EMACS) --batch -l runtests.el
 
 bc-all:
-	$(EMACS) --batch -f batch-byte-compile *.el
+	$(EMACS) --batch --eval '(push "$(HERE)" load-path)' \
+		--eval '(byte-recompile-directory "." 0)'
 
 clean:
 	rm *.elc
