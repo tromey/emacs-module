@@ -48,13 +48,6 @@
 ;; Sometimes you want to violate the rules a bit like e.g.,
 ;; define-minor-mode, or in this file, define-module.
 
-;; Renaming on import seems necessary.
-
-;; Nothing handles `declare-function' but we really should.  We can
-;; probably advise it to make this work.
-
-;; Make tools like C-h f, eldoc, etc, work with this
-
 ;;; Code:
 
 (require 'cl-macs)
@@ -145,16 +138,17 @@ SYM is the short name of a new symbol in the current module."
 (defmacro define-module (name &rest args)
   "Define a new module named NAME.
 
-NAME is a symbol and is also used as the prefix for the module.
-The variable NAME is also defined as a constant whose value is an
-object describing the module.
+NAME must be a symbol.  It is both the name of the module and
+also the prefix for symbols in the module.  The variable NAME is
+also defined as a constant whose value is an object describing
+the module.
 
 ARGS is a plist consisting of keywords and values.  The defined
 keywords are:
 
-:export NAMES   Export some symbols.  NAMES is either a single
-                symbol or a list of symbols.  The symbol names
-                are the shortened form.
+  :export NAMES   Export some symbols.  NAMES is either a single
+                  symbol or a list of symbols.  The symbol names
+                  are the shortened form.
 
 At least one name must be exported.
 
