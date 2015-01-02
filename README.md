@@ -39,12 +39,21 @@ This defines a module named `testmodule` and two variables, an
 Symbols from other modules can be imported using `import-module`.
 Because module boundaries are purely based on symbol naming
 conventions, you can also "import" from modules that do not use
-module.el.  Importing a module implicitly `require`s the feature.
+module.el.  These modules are called "implicit" modules.  Importing a
+module also `require`s the feature.
 
 ```elisp
 (define-module testmodule)
 ;; Import some symbols from M.
 (import-module M :symbols (a b c))
+```
+
+Sometimes, for an implicit module, the name of the feature and the
+name of the module prefix differ.  In this case you can use the
+`:prefix` keyword:
+
+```elisp
+(import-module cl-macs :prefix cl)
 ```
 
 A module is closed by calling `provide`.

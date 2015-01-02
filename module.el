@@ -179,10 +179,14 @@ and `something-whatever'."
      (defconst ,name (make-module :prefix ',name))
      (module--do-define ',name ,name ',args)))
 
-(cl-defun module--do-import (name &key (symbols))
+(cl-defun module--do-import (name &key (symbols) &key (prefix name prefix-set))
   "Helper function for `import-module' that does most of the work."
   (unless module--current
     (error "No current module"))
+  (when (and (boundp name)
+	     (module-p (symbol-value name))
+	     prefix-set)
+    (error "Cannot specify :prefix with a module defined by `define-module'."))
   (unless symbols
     (if (boundp name)
 	(if (module-p (symbol-value name))
@@ -193,18 +197,18 @@ and `something-whatever'."
 	(error "%s is neither a module nor a feature" name))
       (let ((prefix-rx
 	     (concat "^"
-		     (regexp-quote (symbol-name name))
+		     (regexp-quote (symbol-name prefix))
 		     "-\\([^-].*\\)$")))
 	(mapatoms
 	 (lambda (sym)
 	   (let ((sym-name (symbol-name sym)))
-	     ;; Strip off the "NAME-" prefix, leaving the bare name.
+	     ;; Strip off the "PREFIX-" prefix, leaving the bare name.
 	     (if (string-match prefix-rx sym-name)
 		 (push (intern (match-string 1 sym-name)) symbols))))))))
-  (let ((prefix (concat (symbol-name name) "-")))
+  (let ((prefix-str (concat (symbol-name prefix) "-")))
     (dolist (sym symbols)
       (module--define-full sym
-			   (intern (concat prefix (symbol-name sym)))))))
+			   (intern (concat prefix-str (symbol-name sym)))))))
 
 (defmacro import-module (name &rest specs)
   "Import symbols from the module NAME.
@@ -218,7 +222,15 @@ SPECS is a list of keyword/argument pairs.  If SPECS is not
 given, then all the exported symbols in the module named NAME
 will be imported.
 
-Currently just one keyword is defined:
+The defined keywords are:
+
+  :prefix SYMBOL    For an implicit module, set the symbol prefix to
+                    SYMBOL.  This keyword is invalid for modules
+                    defined with `define-module'.  This option exists
+                    so that some implicit modules can be meaningfully
+                    imported, e.g.:
+
+                        (import-module 'cl-macs :prefix 'cl)
 
   :symbols LIST     Import just the symbols in LIST from the module
                     NAME.  The shortened name of the symbol should be
