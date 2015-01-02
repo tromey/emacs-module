@@ -185,14 +185,14 @@ and `something-whatever'."
      (defconst ,name (make-module :prefix ',name))
      (module--do-define ',name ,name ',args)))
 
-(defun module--do-import (name specs)
+(cl-defun module--do-import (name &key (symbols))
   "Helper function for `import-module' that does most of the work."
   (unless module--current
     (error "No current module"))
-  (unless specs
+  (unless symbols
     (if (boundp name)
 	(if (module-p (symbol-value name))
-	    (setf specs (module-exports (symbol-value name)))
+	    (setf symbols (module-exports (symbol-value name)))
 	  (error "%s is bound but does not name a module" name))
       ;; Allow implicit modules.
       (unless (featurep name)
@@ -206,33 +206,34 @@ and `something-whatever'."
 	   (let ((sym-name (symbol-name sym)))
 	     ;; Strip off the "NAME-" prefix, leaving the bare name.
 	     (if (string-match prefix-rx sym-name)
-		 (push (intern (match-string 1 sym-name)) specs))))))))
+		 (push (intern (match-string 1 sym-name)) symbols))))))))
   (let ((prefix (concat (symbol-name name) "-")))
-    (dolist (sym specs)
+    (dolist (sym symbols)
       (module--define-full sym
 			   (intern (concat prefix (symbol-name sym)))))))
 
 (defmacro import-module (name &rest specs)
   "Import symbols from the module NAME.
 
-NAME is a symbol which is passed to `require'.  If there is a
-module named NAME, then symbols are imported from it according to
-SPECS.  Otherwise, symbols are imported from an \"implicit
-module\" named NAME.
+NAME is a symbol which is passed to `require'.  If there is no
+module named NAME, then it will be treated as an \"implicit
+module\" and symbols using `NAME-' as a prefix will be treated as
+if they were defined in a module.
 
-SPECS are symbols that are to be imported.  The short name of the
-symbol should be used.
+SPECS is a list of keyword/argument pairs.  If SPECS is not
+given, then all the exported symbols in the module named NAME
+will be imported.
 
-If no SPECS are provided, then all exported symbols from the
-module are imported into the current module.
+Currently just one keyword is defined:
 
-All imported symbols will be available to the current module
-using their short names.
+  :symbols LIST     Import just the symbols in LIST from the module
+                    NAME.  The shortened name of the symbol should be
+                    given; `import-module' will add the module prefix.
 
 Example:
 
     (define-module ZZZ :export (f))
-    (import-module QQQ (a b))
+    (import-module QQQ :symbols '(a b))
     (defun f () (+ (a) (b)))
     (provide 'ZZZ)
 
@@ -240,7 +241,7 @@ This will define a function `ZZZ-f' which will call `QQQ-a' and
 `QQQ-b'."
   `(progn
      (require ',name)
-     (module--do-import ',name ',specs)))
+     (module--do-import ',name ,@specs)))
 
 (defun module--rewrite-form (form)
   "Rewrite FORM in-place to rename symbols according to the current module."

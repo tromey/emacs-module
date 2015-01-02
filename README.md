@@ -44,7 +44,7 @@ module.el.  Importing a module implicitly `require`s the feature.
 ```elisp
 (define-module testmodule)
 ;; Import some symbols from M.
-(import-module M a b c)
+(import-module M :symbols '(a b c))
 ```
 
 A module is closed by calling `provide`.
