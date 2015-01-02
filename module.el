@@ -193,11 +193,11 @@ and `something-whatever'."
 	   ;; the module in question.
 	   (check (if symbols
 		      (if real-module
-			  (lambda (s)
+			  (lambda (s _full-name)
 			    (memq s (module-exports (symbol-value name))))
-			(lambda (s)
-			  (intern-soft (concat prefix-str (symbol-name s)))))
-		    (lambda (s) t))))
+			(lambda (_s full-name)
+			  (intern-soft full-name)))
+		    (lambda (_s _full-name) t))))
       (unless symbols
 	(if (boundp name)
 	    (if (module-p (symbol-value name))
@@ -217,11 +217,10 @@ and `something-whatever'."
 		 (if (string-match prefix-rx sym-name)
 		     (push (intern (match-string 1 sym-name)) symbols))))))))
       (dolist (sym symbols)
-	(unless (funcall check sym)
-	  (error "Symbol %S is not exported by module %S" sym name))
-	(module--define-full sym
-			     (intern (concat prefix-str
-					     (symbol-name sym))))))))
+	(let ((full-name (concat prefix-str (symbol-name sym))))
+	  (unless (funcall check sym full-name)
+	    (error "Symbol %S is not exported by module %S" sym name))
+	  (module--define-full sym (intern full-name)))))))
 
 (defmacro import-module (name &rest specs)
   "Import symbols from the module NAME.
