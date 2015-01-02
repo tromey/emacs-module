@@ -227,7 +227,7 @@ Currently just one keyword is defined:
 Example:
 
     (define-module ZZZ :export (f))
-    (import-module QQQ :symbols '(a b))
+    (import-module QQQ :symbols (a b))
     (defun f () (+ (a) (b)))
     (provide 'ZZZ)
 
@@ -235,7 +235,7 @@ This will define a function `ZZZ-f' which will call `QQQ-a' and
 `QQQ-b'."
   `(progn
      (require ',name)
-     (module--do-import ',name ,@specs)))
+     (apply #'module--do-import ',name ',specs)))
 
 (defun module--rewrite-form (form)
   "Rewrite FORM in-place to rename symbols according to the current module."

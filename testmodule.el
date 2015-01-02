@@ -4,7 +4,7 @@
 (define-module testmodule
   :export (somefunction somevariable))
 
-(import-module testm2 :symbols '(zzzq))
+(import-module testm2 :symbols (zzzq))
 (import-module testimplicit)
 
 (defvar private 22)
