@@ -47,7 +47,16 @@ module.el.  Importing a module implicitly `require`s the feature.
 (import-module M a b c)
 ```
 
-A module is terminated by calling `provide`.
+A module is closed by calling `provide`.
+
+This module system doesn't have an explicit notion of submodules.
+Rather, it piggy-backs on the existing feature of `require`, that lets
+a directory separator in the symbol name load a file from a
+subdirectory:
+
+```elisp
+(require 'feature/subfeature)
+```
 
 ### Bugs
 
