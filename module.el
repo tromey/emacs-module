@@ -183,32 +183,45 @@ and `something-whatever'."
   "Helper function for `import-module' that does most of the work."
   (unless module--current
     (error "No current module"))
-  (when (and (boundp name)
-	     (module-p (symbol-value name))
-	     prefix-set)
-    (error "Cannot specify :prefix with a module defined by `define-module'."))
-  (unless symbols
-    (if (boundp name)
-	(if (module-p (symbol-value name))
-	    (setf symbols (module-exports (symbol-value name)))
-	  (error "%s is bound but does not name a module" name))
-      ;; Allow implicit modules.
-      (unless (featurep name)
-	(error "%s is neither a module nor a feature" name))
-      (let ((prefix-rx
-	     (concat "^"
-		     (regexp-quote (symbol-name prefix))
-		     "-\\([^-].*\\)$")))
-	(mapatoms
-	 (lambda (sym)
-	   (let ((sym-name (symbol-name sym)))
-	     ;; Strip off the "PREFIX-" prefix, leaving the bare name.
-	     (if (string-match prefix-rx sym-name)
-		 (push (intern (match-string 1 sym-name)) symbols))))))))
-  (let ((prefix-str (concat (symbol-name prefix) "-")))
-    (dolist (sym symbols)
-      (module--define-full sym
-			   (intern (concat prefix-str (symbol-name sym)))))))
+  (let ((real-module (and (boundp name)
+			  (module-p (symbol-value name)))))
+    (when (and real-module prefix-set)
+      (error
+       "Cannot specify :prefix with a module defined by `define-module'."))
+    (let* ((prefix-str (concat (symbol-name prefix) "-"))
+	   ;; A function to check whether the symbol S is exported by
+	   ;; the module in question.
+	   (check (if symbols
+		      (if real-module
+			  (lambda (s)
+			    (memq s (module-exports (symbol-value name))))
+			(lambda (s)
+			  (intern-soft (concat prefix-str (symbol-name s)))))
+		    (lambda (s) t))))
+      (unless symbols
+	(if (boundp name)
+	    (if (module-p (symbol-value name))
+		(setf symbols (module-exports (symbol-value name)))
+	      (error "%s is bound but does not name a module" name))
+	  ;; Allow implicit modules.
+	  (unless (featurep name)
+	    (error "%s is neither a module nor a feature" name))
+	  (let ((prefix-rx
+		 (concat "^"
+			 (regexp-quote (symbol-name prefix))
+			 "-\\([^-].*\\)$")))
+	    (mapatoms
+	     (lambda (sym)
+	       (let ((sym-name (symbol-name sym)))
+		 ;; Strip off the "PREFIX-" prefix, leaving the bare name.
+		 (if (string-match prefix-rx sym-name)
+		     (push (intern (match-string 1 sym-name)) symbols))))))))
+      (dolist (sym symbols)
+	(unless (funcall check sym)
+	  (error "Symbol %S is not exported by module %S" sym name))
+	(module--define-full sym
+			     (intern (concat prefix-str
+					     (symbol-name sym))))))))
 
 (defmacro import-module (name &rest specs)
   "Import symbols from the module NAME.
