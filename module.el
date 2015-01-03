@@ -61,6 +61,20 @@
   ;; all short names.
   exports)
 
+;; A single symbol.  Objects of this type are kept while defining a
+;; module; see the `name-map' in module--internal.
+(cl-defstruct module--symbol
+  ;; The full name of the symbol.
+  full-name
+  ;; The type of symbol.  `:import' means that the symbol was
+  ;; explicitly imported.  `:wildcard' means that the symbol was
+  ;; imported via `import-module' without using `:symbols'.  `:used'
+  ;; is like `:wildcard' but means that the symbol has been
+  ;; referenced.  `:ambiguous' is like `:wildcard' but means that the
+  ;; reference is now ambiguous and cannot be used.  `t' means that
+  ;; the symbol is defined in this module.
+  type)
+
 ;; An internal structure that is maintained while reading a module.
 ;; It is discarded when the module is closed.
 (cl-defstruct module--internal
@@ -71,7 +85,7 @@
   file-name
   ;; The 'module' object for this module.
   module
-  ;; Map the short name of a symbol to the full name.
+  ;; Map the short name of a symbol to a `module--symbol'.
   (name-map (make-hash-table))
   ;; The public prefix as a string.
   public-prefix
@@ -83,12 +97,36 @@
 (defvar module--current nil
   "Current module being defined.")
 
-(defun module--define-full (sym new-sym)
+(defun module--define-full (sym new-sym type)
   "Define a local mapping from SYM to NEW-SYM.
 
+The local mapping will be of type TYPE; see `module--symbol'.
 The new symbol will automatically be replaced in forms in the
 current module."
-  (puthash sym new-sym (module--internal-name-map module--current)))
+  (let ((existing (gethash sym (module--internal-name-map module--current))))
+    (if existing
+	(let ((existing-type (module--symbol-type existing)))
+	  (cond
+	   ((and (eq existing-type :ambiguous)
+		 (eq type :wildcard))
+	    ;; Nothing to do.
+	    )
+	   ((and (eq existing-type type) (eq type :wildcard))
+	    (setf (module--symbol-type existing) :ambiguous))
+	   ((and (eq existing-type type) (not (eq type :import)))
+	    (cl-assert (eq new-sym (module--symbol-full-name existing))))
+	   ((memq existing-type '(:wildcard :ambiguous))
+	    ;; An unused wildcard import can be overridden.
+	    (setf (module--symbol-full-name existing) new-sym)
+	    (setf (module--symbol-type existing) type))
+	   (t
+	    (error
+	     "Cannot redefine `%S' as `%S'; already defined as `%S'"
+	     sym new-sym (module--symbol-full-name existing)))))
+      ;; No existing entry, so define one.
+      (puthash sym (make-module--symbol :full-name new-sym
+					:type type)
+	       (module--internal-name-map module--current)))))
 
 (defun module--define-public (sym)
   "Define SYM as a public symbol.
@@ -97,17 +135,21 @@ SYM is the short name of a new symbol in the current module."
   (module--define-full
    sym (intern (concat
 		(module--internal-public-prefix module--current)
-		(symbol-name sym)))))
+		(symbol-name sym)))
+   t))
 
 (defun module--maybe-define-private (sym)
   "Define SYM as a private symbol, unless it is already defined.
 
 SYM is the short name of a new symbol in the current module."
-  (unless (gethash sym (module--internal-name-map module--current))
-    (module--define-full
-     sym (intern (concat
-		  (module--internal-private-prefix module--current)
-		  (symbol-name sym))))))
+  (let ((entry (gethash sym (module--internal-name-map module--current))))
+    (when (not (and entry
+		    (eq (module--symbol-type entry) t)))
+      (module--define-full
+       sym (intern (concat
+		    (module--internal-private-prefix module--current)
+		    (symbol-name sym)))
+       t))))
 
 (defun module--do-define (name module args)
   "Helper function for `define-module' that does most of the work."
@@ -189,6 +231,7 @@ and `something-whatever'."
       (error
        "Cannot specify :prefix with a module defined by `define-module'."))
     (let* ((prefix-str (concat (symbol-name prefix) "-"))
+	   (symbol-type (if symbols :import :wildcard))
 	   ;; A function to check whether the symbol S is exported by
 	   ;; the module in question.
 	   (check (if symbols
@@ -224,7 +267,8 @@ and `something-whatever'."
 	  (let ((full-name (concat prefix-str (symbol-name sym))))
 	    (unless (funcall check sym full-name)
 	      (error "Symbol %S is not exported by module %S" sym name))
-	    (module--define-full new-name (intern full-name))))))))
+	    (module--define-full new-name (intern full-name)
+				 symbol-type)))))))
 
 (defmacro import-module (name &rest specs)
   "Import symbols from the module NAME.
@@ -257,6 +301,12 @@ The defined keywords are:
                     being imported, and ALIAS is the short name of
                     the symbol to use in the current module.
 
+Explicitly importing a symbol from two different modules (or
+attempting to redefine an explicitly-imported symbol in the
+current module), is an error.  However, if `:symbols' is not
+specified, then ambiguities are tolerated provided that the
+ambiguous symbol is not referenced.
+
 Example:
 
     (define-module ZZZ :export (f))
@@ -277,9 +327,13 @@ This will define a function `ZZZ-f' which will call `QQQ-a' and
       (let ((elt (car form)))
 	(cond
 	 ((symbolp elt)
-	  (let ((replace (gethash elt map)))
-	    (when replace
-	      (setcar form replace))))
+	  (let ((entry (gethash elt map)))
+	    (when entry
+	      (when (eq (module--symbol-type entry) :ambiguous)
+		(error "Symbol `%S' is ambiguously imported" elt))
+	      (setcar form (module--symbol-full-name entry))
+	      (when (eq (module--symbol-type entry) :wildcard)
+		(setf (module--symbol-type entry) :used)))))
 	 ((consp elt)
 	  (module--rewrite-form elt))))
       (setf form (cdr form)))))
