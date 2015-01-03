@@ -14,4 +14,4 @@ bc-all:
 		--eval '(byte-recompile-directory "." 0)'
 
 clean:
-	rm *.elc
+	-rm *.elc
