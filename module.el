@@ -217,10 +217,14 @@ and `something-whatever'."
 		 (if (string-match prefix-rx sym-name)
 		     (push (intern (match-string 1 sym-name)) symbols))))))))
       (dolist (sym symbols)
-	(let ((full-name (concat prefix-str (symbol-name sym))))
-	  (unless (funcall check sym full-name)
-	    (error "Symbol %S is not exported by module %S" sym name))
-	  (module--define-full sym (intern full-name)))))))
+	(let ((new-name sym))
+	  (when (consp new-name)
+	    (setf sym (car new-name))
+	    (setf new-name (cdr new-name)))
+	  (let ((full-name (concat prefix-str (symbol-name sym))))
+	    (unless (funcall check sym full-name)
+	      (error "Symbol %S is not exported by module %S" sym name))
+	    (module--define-full new-name (intern full-name))))))))
 
 (defmacro import-module (name &rest specs)
   "Import symbols from the module NAME.
@@ -247,6 +251,11 @@ The defined keywords are:
   :symbols LIST     Import just the symbols in LIST from the module
                     NAME.  The shortened name of the symbol should be
                     given; `import-module' will add the module prefix.
+                    Each element of LIST can either by a symbol or
+                    a cons of the form `(NAME . ALIAS)', where NAME
+                    is the short name of the symbol in the module
+                    being imported, and ALIAS is the short name of
+                    the symbol to use in the current module.
 
 Example:
 

@@ -6,7 +6,7 @@
 
 (import-module testm2 :symbols (zzzq))
 (import-module testimplicit)
-(import-module testimplicit2 :prefix ti2)
+(import-module testimplicit2 :prefix ti2 :symbols ((implicit2 . i2)))
 
 (defvar private 22)
 
@@ -19,6 +19,6 @@
   (+ (private-function 0)
      (zzzq)
      (implicit)
-     (implicit2)))
+     (i2)))
 
 (provide 'testmodule)
