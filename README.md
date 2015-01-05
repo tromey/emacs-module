@@ -67,19 +67,12 @@ subdirectory:
 (require 'feature/subfeature)
 ```
 
-### Bugs
+### Caveats
 
 The renaming is not perfect.  If your code uses `intern` or otherwise
 reflects on symbols then you have to be aware of the transforms done
 by module.el.
 
-A related bug is that autoload cookies aren't rewritten.  This seems
+Another issue is that autoload cookies aren't rewritten.  This seems
 reasonably hard to fix, since they can refer to any symbol and so the
 cookie extraction code would have to duplicate the importing logic.
-
-This module system does not support having multiple versions of a
-module loaded simultaneously.  However, that seems like a good feature
-to support.
-
-See the issue tracker for other bugs, and for discussion of the
-versioning problem.
